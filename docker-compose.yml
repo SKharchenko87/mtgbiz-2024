@@ -1,0 +1,63 @@
+version: "3.8"
+
+x-env-file: example.env
+
+services:
+  server:
+    build: ./server
+    ports:
+      - "8090:${SERVER_PORT}"
+    networks:
+      - mtgbiz
+    depends_on:
+      - db
+    environment:
+      - SERVER_PROTOCOL=${SERVER_PROTOCOL}
+      - SERVER_HOST=${SERVER_HOST}
+      - SERVER_PORT=${SERVER_PORT}
+      - SERVER_PATH_PARAM_CLIENT2=${SERVER_PATH_PARAM_CLIENT2}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+
+  client2:
+    build: ./client2
+    ports:
+      - "8092:${CLIENT2_PORT}"
+    environment:
+      - CLIENT2_PORT=${CLIENT2_PORT}
+      - SERVER_PROTOCOL=${SERVER_PROTOCOL}
+      - SERVER_HOST=${SERVER_HOST}
+      - SERVER_PORT=${SERVER_PORT}
+      - SERVER_PATH_PARAM_CLIENT2=${SERVER_PATH_PARAM_CLIENT2}
+    networks:
+      - mtgbiz
+    depends_on:
+      - server
+
+  db:
+    image: postgres
+    hostname: postgres
+    ports:
+      - "15432:${POSTGRES_PORT}"
+    networks:
+      - mtgbiz
+    environment:
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+    volumes:
+      - ./migrations/:/docker-entrypoint-initdb.d
+#      - db-mgtbiz:/var/lib/postgresql/data
+
+networks:
+  mtgbiz:
+    name: mtgbiz
+
+volumes:
+  db-mgtbiz:
+    driver: local
