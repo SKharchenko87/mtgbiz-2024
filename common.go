@@ -10,7 +10,7 @@ import _ "encoding/json"
 type Table1 struct {
 	Id         int64     `json:"id"`
 	N          int64     `json:"n"`
-	Code       [4]byte   `json:"code"`
+	Code       string    `json:"code"`
 	Data       string    `json:"data"`
 	CreateDttm time.Time `json:"createDttm"`
 }
