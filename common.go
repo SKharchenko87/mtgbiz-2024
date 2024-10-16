@@ -1,4 +1,4 @@
-package main
+package mtgbiz_2024
 
 import (
 	"fmt"
