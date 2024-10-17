@@ -22,15 +22,32 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_PORT=${POSTGRES_PORT}
 
+  client1:
+    build: ./client1
+    ports:
+      - "8091:${CLIENT1_PORT}"
+    environment:
+      - CLIENT1_PORT=${CLIENT1_PORT}
+      - SERVER_PROTOCOL_CLIENT1=${SERVER_PROTOCOL_CLIENT1}
+      - SERVER_HOST_CLIENT1=${SERVER_HOST_CLIENT1}
+      - SERVER_PORT_CLIENT1=${SERVER_PORT_CLIENT1}
+      - SERVER_PATH_PARAM_CLIENT1=${SERVER_PATH_PARAM_CLIENT1}
+    networks:
+      - mtgbiz
+    depends_on:
+      - server
+#    volumes:
+#      - ./client1.out:/client1.out
+
   client2:
     build: ./client2
     ports:
       - "8092:${CLIENT2_PORT}"
     environment:
       - CLIENT2_PORT=${CLIENT2_PORT}
-      - SERVER_PROTOCOL=${SERVER_PROTOCOL}
-      - SERVER_HOST=${SERVER_HOST}
-      - SERVER_PORT=${SERVER_PORT}
+      - SERVER_PROTOCOL_CLIENT2=${SERVER_PROTOCOL_CLIENT2}
+      - SERVER_HOST_CLIENT2=${SERVER_HOST_CLIENT2}
+      - SERVER_PORT_CLIENT2=${SERVER_PORT_CLIENT2}
       - SERVER_PATH_PARAM_CLIENT2=${SERVER_PATH_PARAM_CLIENT2}
     networks:
       - mtgbiz

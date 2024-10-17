@@ -3,55 +3,50 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SKharchenko87/mtgbiz-2024/common"
-	"github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net/http"
 	"os"
+
+	mtgbiz_2024 "github.com/SKharchenko87/mtgbiz-2024"
+
+	"github.com/gorilla/websocket"
 )
 
-func getServerURL() string {
-	protocol := os.Getenv("SERVER_PROTOCOL_CLIENT1")
-	host := os.Getenv("SERVER_HOST_CLIENT1")
-	port := os.Getenv("SERVER_PORT_CLIENT1")
-	pathParam := os.Getenv("SERVER_PATH_PARAM_CLIENT1")
-	serverURL := fmt.Sprintf("%s://%s:%s/%s", protocol, host, port, pathParam)
-	return serverURL
-}
-
-// ToDO
-func send() {
+// task1 - получает данные в одном потоке и передаём для записи в файл в другой поток. Данные из потока в поток передаются построчно.
+func task1(ch chan mtgbiz_2024.Table1) {
 	log.Println("Клиент запущен")
 	// Подключение к серверу
-	conn, _, err := websocket.DefaultDialer.Dial(getServerURL(), nil)
+	fmt.Println(mtgbiz_2024.GetServerURL("CLIENT1"))
+	conn, _, err := websocket.DefaultDialer.Dial(mtgbiz_2024.GetServerURL("CLIENT1"), nil)
 	if err != nil {
 		log.Fatalf("Ошибка при подключении к серверу: %v", err)
+		return
 	}
 	defer conn.Close()
 
 	// Получаем сообщения от сервера.
 	for {
 		// читаем из сокета
-		mt, msg, err := conn.ReadMessage()
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			log.Printf("Ошибка при чтении сообщения: %v", err)
+			if !websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				log.Printf("Ошибка при чтении сообщения: %v", err)
+			}
 			break
 		}
-		if mt == websocket.CloseMessage {
-			break
-		}
-		fmt.Printf("%s\n", msg) //ToDo
+		fmt.Println(string(msg))
+
 		// десереализуем
-		t := common.Table1{}
-		err = json.Unmarshal(msg, t)
+		t := mtgbiz_2024.Table1{}
+		err = json.Unmarshal(msg, &t)
 		if err != nil {
 			log.Printf("Ошибка при декодировании сообщения: %v", err)
 			continue
 		}
-		// пишем в файл ToDO
-		fmt.Printf("%s\n", t) //ToDo
 
+		// пишем в канал на запись в файл
+		ch <- t
 	}
 
 }
@@ -78,26 +73,34 @@ func mainPage(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// Запрос данных
-func getData(w http.ResponseWriter, r *http.Request) {
-
-	go send() // Нажатие на кнопку не должно замораживать клиент
-	mainPage(w, r)
-}
-
-type serverParam struct {
-	protocol  string
-	host      string
-	port      string
-	pathParam string
-}
-
 func main() {
+	ch := make(chan mtgbiz_2024.Table1)
+
 	http.Handle("GET /", http.HandlerFunc(mainPage))
-	http.Handle("POST /", http.HandlerFunc(getData))
-	host := os.Getenv("CLIENT2_HOST")
-	port := os.Getenv("CLIENT2_PORT")
+	http.HandleFunc("POST /", func(w http.ResponseWriter, r *http.Request) {
+		go task1(ch) // Нажатие на кнопку не должно замораживать клиент
+		mainPage(w, r)
+	})
+
+	// Читаем из канала и отправляем в файл
+	go func() {
+		f, err := os.Create("/client1.out")
+		if err != nil {
+			log.Printf("Ошибка открытия файла данных: %v", err)
+			return
+		}
+
+		for t := range ch {
+			_, err = f.WriteString(fmt.Sprint(t))
+			if err != nil {
+				log.Printf("Ошибка записи в файл: %v", err)
+				continue
+			}
+		}
+	}()
+
+	host := os.Getenv("CLIENT1_HOST")
+	port := os.Getenv("CLIENT1_PORT")
 	addr := fmt.Sprintf("%s:%s", host, port)
 	log.Fatal(http.ListenAndServe(addr, nil))
-
 }

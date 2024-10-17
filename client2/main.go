@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
+	mtgbiz_2024 "github.com/SKharchenko87/mtgbiz-2024"
 	"github.com/gorilla/websocket"
 	"io"
 	"log"
@@ -24,15 +25,7 @@ const (
 // но перед этим кодирует их в Base64.
 func send(numberOfThreads int) {
 	// Подключение к серверу
-
-	protocol := os.Getenv("SERVER_PROTOCOL")
-	host := os.Getenv("SERVER_HOST")
-	port := os.Getenv("SERVER_PORT")
-	pathParam := os.Getenv("SERVER_PATH_PARAM_CLIENT2")
-	serverURL := fmt.Sprintf("%s://%s:%s/%s", protocol, host, port, pathParam)
-
-	//conn, _, err := websocket.DefaultDialer.Dial("ws://server:8090/ws", nil)
-	conn, _, err := websocket.DefaultDialer.Dial(serverURL, nil)
+	conn, _, err := websocket.DefaultDialer.Dial(mtgbiz_2024.GetServerURL("CLIENT2"), nil)
 	if err != nil {
 		log.Fatalf("Ошибка при подключении к серверу: %v", err)
 	}

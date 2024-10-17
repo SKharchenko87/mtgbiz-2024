@@ -3,22 +3,21 @@ package main
 import (
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
+
+	mtgbiz_2024 "github.com/SKharchenko87/mtgbiz-2024"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	_ "github.com/lib/pq"
 )
 
-type message struct {
-	id  uuid.UUID
-	msg []byte
-}
-
-func handleConnections(w http.ResponseWriter, r *http.Request) {
+func handleConnections1(w http.ResponseWriter, r *http.Request) {
 	id := uuid.New()
 	fmt.Printf("%s клиент подключился\n", id)
 	defer fmt.Printf("%s клиент отключился\n", id)
@@ -32,14 +31,65 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	defer ws.Close()
 
 	// соединение до БД
-	host := os.Getenv("POSTGRES_HOST")
-	user := os.Getenv("POSTGRES_USER")
-	password := os.Getenv("POSTGRES_PASSWORD")
-	dbname := os.Getenv("POSTGRES_DB")
-	port := os.Getenv("POSTGRES_PORT")
-	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
-	fmt.Println(dsn)
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres", mtgbiz_2024.GetDSN())
+	if err != nil {
+		log.Fatalf("Ошибка при получения соединения до БД: %v", err)
+		return
+	}
+	defer db.Close()
+
+	// Предварительный разбор запроса
+	rows, err := db.Query("SELECT id, n, code, data, create_dttm FROM table1")
+	if err != nil {
+		log.Fatalf("Ошибка при разборе запроса: %v", err)
+		return
+	}
+
+	//Построчное чтение и отправка данных
+	for rows.Next() {
+		t := mtgbiz_2024.Table1{}
+		err = rows.Scan(&t.Id, &t.N, &t.Code, &t.Data, &t.CreateDttm)
+		if err != nil {
+			log.Printf("Ошибка при чтение строки: %v", err)
+			continue
+		}
+
+		b, err := json.Marshal(t)
+		if err != nil {
+			log.Printf("Ошибка при формировании сообщения: %v", err)
+			continue
+		}
+
+		err = ws.WriteMessage(websocket.TextMessage, b)
+		if err != nil {
+			log.Printf("Ошибка при отправке сообщения: %v", err)
+			continue
+		}
+	}
+	fmt.Println("xxxxxxx")
+	err = ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	if err != nil {
+		log.Printf("Ошибка при отправке сообщения: %v", err)
+	}
+	time.Sleep(1 * time.Second)
+
+}
+
+func handleConnections2(w http.ResponseWriter, r *http.Request) {
+	id := uuid.New()
+	fmt.Printf("%s клиент подключился\n", id)
+	defer fmt.Printf("%s клиент отключился\n", id)
+	// соединения до WebSocket
+	upgrader := websocket.Upgrader{}
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Fatalf("Ошибка при получения соединения до WebSocket: %v", err)
+		return
+	}
+	defer ws.Close()
+
+	// соединение до БД
+	db, err := sql.Open("postgres", mtgbiz_2024.GetDSN())
 	if err != nil {
 		log.Fatalf("Ошибка при получения соединения до БД: %v", err)
 		return
@@ -82,8 +132,12 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	// Обработчик второго клиента
-	pathParam := os.Getenv("SERVER_PATH_PARAM_CLIENT2")
-	http.HandleFunc("/"+pathParam, handleConnections)
+	pathParam := os.Getenv("SERVER_PATH_PARAM_CLIENT1")
+	http.HandleFunc("/"+pathParam, handleConnections1)
+
+	// Обработчик второго клиента
+	pathParam = os.Getenv("SERVER_PATH_PARAM_CLIENT2")
+	http.HandleFunc("/"+pathParam, handleConnections2)
 
 	host := os.Getenv("SERVER_HOST")
 	port := os.Getenv("SERVER_PORT")
