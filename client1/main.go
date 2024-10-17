@@ -16,11 +16,11 @@ import (
 // task1 - получает данные в одном потоке и передаём для записи в файл в другой поток. Данные из потока в поток передаются построчно.
 func task1(ch chan mtgbiz_2024.Table1) {
 	log.Println("Клиент запущен")
+	defer log.Println("Клиент остановлен")
 	// Подключение к серверу
-	fmt.Println(mtgbiz_2024.GetServerURL("CLIENT1"))
 	conn, _, err := websocket.DefaultDialer.Dial(mtgbiz_2024.GetServerURL("CLIENT1"), nil)
 	if err != nil {
-		log.Fatalf("Ошибка при подключении к серверу: %v", err)
+		log.Printf("Ошибка при подключении к серверу: %v", err)
 		return
 	}
 	defer conn.Close()
@@ -74,7 +74,8 @@ func mainPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	ch := make(chan mtgbiz_2024.Table1)
+
+	ch := make(chan mtgbiz_2024.Table1) // канал для записи в файл
 
 	http.Handle("GET /", http.HandlerFunc(mainPage))
 	http.HandleFunc("POST /", func(w http.ResponseWriter, r *http.Request) {

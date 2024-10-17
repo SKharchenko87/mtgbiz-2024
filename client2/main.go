@@ -27,7 +27,8 @@ func send(numberOfThreads int) {
 	// Подключение к серверу
 	conn, _, err := websocket.DefaultDialer.Dial(mtgbiz_2024.GetServerURL("CLIENT2"), nil)
 	if err != nil {
-		log.Fatalf("Ошибка при подключении к серверу: %v", err)
+		log.Printf("Ошибка при подключении к серверу: %v", err)
+		return
 	}
 	defer conn.Close()
 
@@ -87,17 +88,11 @@ func start(w http.ResponseWriter, r *http.Request) {
 	numberOfThreadsStr := r.FormValue("numberOfThreads")
 	numberOfThreads, err := strconv.Atoi(numberOfThreadsStr)
 	if err != nil {
-		log.Fatalf("Ошибка числа потоков: %v", err)
+		log.Printf("Ошибка числа потоков: %v", err)
+		return
 	}
 	go send(numberOfThreads) // Нажатие на кнопку не должно замораживать клиент
 	mainPage(w, r)
-}
-
-type serverParam struct {
-	protocol  string
-	host      string
-	port      string
-	pathParam string
 }
 
 func main() {

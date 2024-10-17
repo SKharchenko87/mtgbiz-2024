@@ -12,9 +12,9 @@ services:
     depends_on:
       - db
     environment:
-      - SERVER_PROTOCOL=${SERVER_PROTOCOL}
       - SERVER_HOST=${SERVER_HOST}
       - SERVER_PORT=${SERVER_PORT}
+      - SERVER_PATH_PARAM_CLIENT1=${SERVER_PATH_PARAM_CLIENT1}
       - SERVER_PATH_PARAM_CLIENT2=${SERVER_PATH_PARAM_CLIENT2}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -36,8 +36,8 @@ services:
       - mtgbiz
     depends_on:
       - server
-#    volumes:
-#      - ./client1.out:/client1.out
+    volumes:
+      - ./client1.out:/client1.out
 
   client2:
     build: ./client2
@@ -68,8 +68,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_PORT=${POSTGRES_PORT}
     volumes:
+      - ./data/:/data
       - ./migrations/:/docker-entrypoint-initdb.d
-#      - db-mgtbiz:/var/lib/postgresql/data
 
 networks:
   mtgbiz:

@@ -28,9 +28,10 @@ docker-compose -f docker-compose.yml --env-file .env up -d
 ```
 
 ### Задача 1
-ToDo Приложение-клиент 1
-   
+Откройте страницу http://localhost:8091 и нажмите кнопку старт
+![img_1.png](img_1.png)   
+В результате будут записаны данные в файл [client1.out](client1.out)
 ### Задача 2
-Откройте страницу http://localhost:8092/, укажите число поток и нажмите кнопку старт
+Откройте страницу http://localhost:8092, укажите число поток и нажмите кнопку старт
 ![img.png](img.png)
-Ход выполнения можно увидеть в логах контейнера server и в таблице БД database.table2, строка подключения `postgresql://user:password@postgres:5432/database` 
+Ход выполнения можно увидеть в логах контейнера server и в таблице БД database.table2, строка подключения `postgresql://user:password@postgres:15432/database` 
