@@ -113,7 +113,7 @@ func handleConnections2(w http.ResponseWriter, r *http.Request) {
 		_, msg, err := ws.ReadMessage()
 		if err != nil {
 			log.Printf("Ошибка при чтении сообщения: %v", err)
-			continue
+			break
 		}
 		fmt.Printf("%s пришли новые данные: %s\n", id, msg)
 		// декодируем из Base64
